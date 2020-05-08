@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>scalajs fucks</title>
+</head>
+<body style="background-color:grey">
+
+<!--<div id="canvas_container" style="padding: 0px; margin: 0px; border:1px solid red">-->
+<canvas id="canvas" style="width:100%; height:100%; margin:10"></canvas>
+<!--</div>-->
+
+<script type="text/javascript" src="./target/scala-2.13/scalajstest-fastopt.js"></script>
+
+<div class="sliders">
+    <output name="mvfact" id="mvfacttxt">mvfact</output>
+    <input type="range" min="1" max="100" value="1" class="slider" id="mvfact"
+           oninput="mvfactChanged(mvfact.value)">
+
+    <output id="footxt"></output>
+    <input type="range" min="1" max="100" value="50" class="slider" id="foo">
+</div>
+
+</body>
+</html>
