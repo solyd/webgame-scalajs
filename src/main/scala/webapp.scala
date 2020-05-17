@@ -1,8 +1,9 @@
 import java.time.{LocalDate, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 
 import org.scalajs.dom
-import org.scalajs.dom.{KeyboardEvent, document, html}
+import org.scalajs.dom.{Element, Event, KeyboardEvent, document, html}
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
@@ -30,12 +31,42 @@ object webapp {
     mvfact = vi
   }
 
-  def main(args: Array[String]): Unit = {
+  def slider(name: String, range: (Int, Int)): Element = {
+    val input = document.createElement("input")
+    input.setAttribute("id", s"${name}_slider")
+    input.setAttribute("type", "range")
+    input.setAttribute("class", "slider")
+    input.setAttribute("min", range._1.toString)
+    input.setAttribute("max", range._2.toString)
+
+    input.addEventListener("oninput", { e: Event =>
+      println(e.toString)
+    })
+
+    val output = document.createElement("output")
+    output.setAttribute("id", s"${name}_output")
+    output.innerHTML = name
+
+    val div = document.createElement("div")
+    div.appendChild(output)
+    div.appendChild(input)
+
+    div
+  }
+
+  def notmain(args: Array[String]): Unit = {
     println(s"--- loaded @ ${LocalDateTime.now(ZoneOffset.UTC)} UTC ---")
     println(s"args: ${args.mkString(",")}")
 
     val canvas = dom.document.getElementById("canvas").asInstanceOf[html.Canvas]
     val c = canvas.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
+
+    canvas.width = canvas.parentElement.clientWidth
+    canvas.height = canvas.parentElement.clientHeight
+
+
+    document.body.appendChild(slider("slidertest", (1, 100)))
+
 
 //    val ccontainer = document.getElementById("canvas_container")
 //    ccontainer.setAttribute(
@@ -44,18 +75,18 @@ object webapp {
 //        "padding: 0px; margin: 0px; border:1px solid red"
 //    )
 
-    canvas.width = canvas.parentElement.clientWidth
-    canvas.height = canvas.parentElement.clientHeight * 4
+
 //    canvas.width = 600
 //    canvas.height = 800
 
     //dom.window.onresize
+    c.fillStyle = "#fAfAfA"
+    c.fillRect(0, 0, canvas.width, canvas.height)
+
+
 
     println(c)
     println(s"canvas.width: ${canvas.width}, canvas.height: ${canvas.height}")
-
-    c.fillStyle = "#fAfAfA"
-    c.fillRect(0, 0, canvas.width, canvas.height)
 
     c.fillStyle = "black"
     var down = false
@@ -77,16 +108,7 @@ object webapp {
 //    canvas.onkeydown
 //    dom.window.onkeydown
 
-    
-    val gradient = c.createLinearGradient(
-      canvas.width / 2 - 100, 0, canvas.width/ 2 + 100, 0
-    )
-    gradient.addColorStop(0,"red")
-    gradient.addColorStop(0.5,"green")
-    gradient.addColorStop(1,"blue")
 
-    c.textAlign = "start"
-    c.textBaseline = "middle"
 
     class GameLoop {
       var tsLast: Double = 0
@@ -134,7 +156,16 @@ object webapp {
           color = "#FF00FF"
         }
 
-        def move(delta: (Int, Int)): Unit = pos = (pos._1 + mvfact * delta._1, pos._2 + mvfact * delta._2)
+        def move(delta: (Int, Int)): Unit = {
+          val newpos = (pos._1 + mvfact * delta._1, pos._2 + mvfact * delta._2)
+          println("newpos == ", newpos)
+
+          // need to make sure the whole box is withing bounds
+          if (!(newpos._1 < 0 || newpos._1 + dims._1 > canvas.width
+            || newpos._2 < 0 || newpos._2 + dims._2 > canvas.height)) {
+            pos = newpos
+          }
+        }
 
         def render(ts: Double): Unit = {
           val savedstyle = c.fillStyle
@@ -159,33 +190,23 @@ object webapp {
           frameTimes.clear
         }
 
-        c.clearRect(
-          0, 0, canvas.width, canvas.height
-        )
+        c.clearRect(0, 0, canvas.width, canvas.height)
 
+        // bg color
         c.fillStyle = "#f8f8f8"
         c.fillRect(0, 0, canvas.width, canvas.height)
+
+        // bg wireframe
+        val margin = 10
+        c.fillStyle = "#000000"
+        c.strokeRect(margin, margin, canvas.width * 0.6 - margin, canvas.height - margin * 2)
 
         player.render(ts)
 
         val fontHeight= 12
         c.font = s"${fontHeight}px Source Code Pro"
         c.fillStyle = "#000000"
-        c.fillText(s"fps: $fpsToDisplay", 0, fontHeight)
-        //c.fillText(s"avg frame time: $avgFrameTimeToDispaly", 0, 2 * fontHeight)
-
-//        val date = new js.Date()
-//        c.font = "75px sans-serif"
-//        c.fillStyle = gradient
-//        c.fillText(
-//          Seq(
-//            date.getHours(),
-//            date.getMinutes(),
-//            date.getSeconds()
-//          ).mkString(":"),
-//          canvas.width / 2,
-//          canvas.height / 2
-//        )
+        c.fillText(s"fps: $fpsToDisplay", canvas.width - 100, fontHeight)
 
         tsLast = ts
         dom.window.requestAnimationFrame(ts => render(ts))
@@ -195,22 +216,5 @@ object webapp {
     /*code*/
 
     (new GameLoop).render(dom.window.performance.now())
-
-
-
-
-    /// ---------------------------------------------------------------------------
-//    appendPar(document.body, "WOWOWOW")
-//
-//    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
-//      println("DOMContentLoaded")
-//    })
-//
-//    val button = document.createElement("button")
-//    button.textContent = "Click me!"
-//    button.addEventListener("click", { (e: dom.MouseEvent) =>
-//      addClickedMessage()
-//    })
-//    document.body.appendChild(button)
   }
 }

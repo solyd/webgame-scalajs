@@ -1,0 +1,906 @@
+*  ideas / todo items
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 11:47]
+  :END:
+
+- recreate games
+    - Tetris
+    - Pacman
+    - Breakout
+    - Mario
+    - Shooter
+- Akka/play server w optimized js
+- Obfuscation
+    - Copy right methods for online games
+- Setup aws env
+- Ads, patreon, paypal, donations
+- Client to server
+- Multiplayer
+- P2p, is webrtc/websockets avail
+- Effecient collision detectors, limits of interacting artifacts
+- Cloth simulation
+- Liquid sim
+- Game of life
+- Fractals
+- Physics
+- Persistent game world to which changes are incrementally made (along with natural mutations).
+- explore interactive programming / design. e.g. sliders that control player speed.
+
+*  code to add html element
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 11:47]
+  :END:
+
+#+BEGIN_SRC scala
+   appendPar(document.body, "WOWOWOW")
+
+   document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
+     println("DOMContentLoaded")
+   })
+
+   val button = document.createElement("button")
+   button.textContent = "Click me!"
+   button.addEventListener("click", { (e: dom.MouseEvent) =>
+     addClickedMessage()
+   })
+   document.body.appendChild(button)*/
+#+END_SRC
+*  setting % widht/height for div
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 12:12]
+  :END:
+
+you need to set html/body to 100% before percentage with div will work:
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>scalajs fucks</title>
+    <style>
+        html, body {
+          height: 100%;
+          width: 100%;
+          margin: 0px;
+    </style>
+</head>
+<body style="background-color:grey">
+
+<div id="canvas_container" style="padding: 0px; margin: 0px; border:1px solid red; height:80%; width:90%">
+    <p>dsdjsja</p>
+    <canvas id="canvas" style="width:100%; height:100%; margin:10"></canvas>
+</div>
+
+<script type="text/javascript" src="./target/scala-2.13/scalajstest-fastopt.js"></script>
+
+</body>
+</html>
+
+#+END_SRC
+*  display clock with gradient
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 12:19]
+  :END:
+
+#+BEGIN_SRC scala
+val gradient = c.createLinearGradient(
+      canvas.width / 2 - 100, 0, canvas.width/ 2 + 100, 0
+    )
+    gradient.addColorStop(0,"red")
+    gradient.addColorStop(0.5,"green")
+    gradient.addColorStop(1,"blue")
+
+
+        c.fillText(s"avg frame time: $avgFrameTimeToDispaly", 0, 2 * fontHeight)
+
+       val date = new js.Date()
+       c.font = "75px sans-serif"
+       c.fillStyle = gradient
+       c.fillText(
+         Seq(
+           date.getHours(),
+           date.getMinutes(),
+           date.getSeconds()
+         ).mkString(":"),
+         canvas.width / 2,
+         canvas.height / 2
+       )
+
+#+END_SRC
+*  wasted 40 minutes on selection of mainClass
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 13:04]
+  :END:
+
+shit does not work
+
+#+BEGIN_SRC scala
+tname := "scalajstest"
+
+version := "0.1"
+
+scalaVersion := "2.13.2"
+
+enablePlugins(ScalaJSPlugin)
+
+// This is an application with a main method
+scalaJSUseMainModuleInitializer := true
+//mainClass in Compile := Some("gameoflife")
+//mainClass in (Compile, run) := Some("gameoflife")
+//mainClass in (Compile, packageBin) := Some("gameoflife")
+//mainClass in packageBin := Some("gameoflife")
+//mainClass in run := Some("gameoflife")
+
+libraryDependencies ++= Seq(
+  "org.scala-js" %%% "scalajs-dom" % "1.0.0",
+  "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
+  "com.lihaoyi" %%% "utest" % "0.7.4" % "test"
+)
+
+jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
+testFrameworks += new TestFramework("utest.runner.Framework")
+#+END_SRC
+*  saving version of gameoflife that hangs firefox when calculation first generation
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 14:58]
+  :END:
+
+
+#+BEGIN_SRC scala
+import java.time.{LocalDate, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.util.Random
+import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
+
+import org.scalajs.dom
+import org.scalajs.dom.{Element, Event, KeyboardEvent, document, html}
+
+import scala.collection.mutable
+import scala.concurrent.duration.Duration
+import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExportTopLevel
+
+object gameoflife {
+  def main(args: Array[String]): Unit = {
+    println(s"--- loaded @ ${LocalDateTime.now(ZoneOffset.UTC)} UTC ---")
+    println(s"args: ${args.mkString(",")}")
+
+    val canvas = dom.document.getElementById("canvas").asInstanceOf[html.Canvas]
+    val c = canvas.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
+
+    canvas.width = canvas.parentElement.clientWidth
+    canvas.height = canvas.parentElement.clientHeight
+
+    println(s"canvas.width: ${canvas.width}, canvas.height: ${canvas.height}")
+
+    class Grid()
+
+    class GameLoop {
+      var tsLast: Double = 0
+      var fpsCalcLast: Double = 0
+
+      val calcFpsInterval = Duration(100, TimeUnit.MILLISECONDS)
+
+      var frameTimes = mutable.ArrayBuffer.empty[Double]
+      val FpsLimit = 60
+      frameTimes.sizeHint((calcFpsInterval.toSeconds * FpsLimit).toInt)
+
+      var avgFrameTimeToDispaly: Double = 0
+      var fpsToDisplay: Double = 0
+
+      dom.document.onkeydown = (e: dom.KeyboardEvent) => {
+        println("down", e.key)
+      }
+
+      dom.document.onkeypress = (e: dom.KeyboardEvent) => {
+        println("press", e.key)
+      }
+
+      dom.document.onkeyup = (e: dom.KeyboardEvent) => println("up", e.key)
+
+
+      val gridUpdateInterval = Duration(1, TimeUnit.SECONDS)
+      var gridLastUpdate: Double = 0
+      var gridGeneration = 0
+
+      val size = 10
+
+      val rnd = new Random(214310)
+      var alive = (1 to 100).map { _ =>
+        (
+          math.abs((rnd.nextInt() % canvas.width) / size * size),
+          math.abs((rnd.nextInt() % canvas.height) / size * size)
+        )
+      }.distinct
+
+      val grid = for {
+        x <- 0 to canvas.width / size * size
+        y <- 0 to canvas.height / size * size
+      } yield (x, y)
+
+      println("grid size", grid.size)
+
+      def add(x: Int)(v: Int) = x+v
+
+      def neighbours(pos: (Int, Int)): Seq[(Int, Int)] = {
+        (for {
+          p1 <- Seq(add(1) _, add(0) _, add(-1) _)
+          p2 <- Seq(add(1) _, add(0) _, add(-1) _)
+        } yield (p1, p2))
+          .map { case (f1, f2) => (f1(pos._1), f2(pos._2)) }
+          .filter( _ != (0,0))
+      }
+
+      println("startingPositions", alive)
+
+      def render(ts: Double): Unit = {
+        frameTimes.append(ts - tsLast)
+        tsLast = ts
+
+        if (ts - fpsCalcLast > calcFpsInterval.toMillis) {
+          avgFrameTimeToDispaly = frameTimes.sum / frameTimes.size
+          fpsToDisplay = frameTimes.size / ((ts - fpsCalcLast) / 1000.0)
+          fpsCalcLast = ts
+          frameTimes.clear
+        }
+
+        // clear screen
+        c.clearRect(0, 0, canvas.width, canvas.height)
+
+        // bg color
+        c.fillStyle = "#f8f8f8"
+        c.fillRect(0, 0, canvas.width, canvas.height)
+
+        if (ts - gridLastUpdate > gridUpdateInterval.toMillis) {
+          gridLastUpdate = ts
+          gridGeneration += 1
+
+          println(s"calculating generation #${gridGeneration} @ $ts")
+
+          alive = alive.map[Option[(Int, Int)]] { pos =>
+            println(s"alive proc $pos")
+            (alive intersect neighbours(pos)).size match {
+              case i if i >= 2 && i <= 3 => Some(pos)
+              case _ => None
+            }
+          }.filter(_.nonEmpty)
+            .map(_.get)
+
+          alive ++= (grid diff alive).map[Option[(Int, Int)]] { pos =>
+            println(s"dead proc $pos")
+            if ((alive intersect neighbours(pos)).size == 3) {
+              Some(pos)
+            } else {
+              None
+            }
+          }.filter(_.nonEmpty)
+            .map(_.get)
+        }
+
+        alive.foreach { pos =>
+          c.fillStyle = "#000000"
+          c.fillRect(pos._1, pos._2, size, size)
+        }
+
+        val fontHeight= 12
+        c.font = s"${fontHeight}px Source Code Pro"
+        c.fillStyle = "#000000"
+        c.fillText(s"fps: $fpsToDisplay", canvas.width - 100, fontHeight)
+        c.fillText(s"generation: $gridGeneration", canvas.width - 100, fontHeight * 2)
+
+        tsLast = ts
+        dom.window.requestAnimationFrame(ts => render(ts))
+      }
+    }
+
+    (new GameLoop).render(dom.window.performance.now())
+  }
+
+}
+
+#+END_SRC
+*  saving neighbours function
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 19:33]
+  :END:
+
+
+#+BEGIN_SRC scala
+      def neighbours(pos: (Int, Int)): Seq[(Int, Int)] = {
+        (for {
+          p1 <- Seq(add(1) _, add(0) _, add(-1) _)
+          p2 <- Seq(add(1) _, add(0) _, add(-1) _)
+        } yield (p1, p2))
+          .map { case (f1, f2) => (f1(pos._1), f2(pos._2)) }
+          .filter( p => p != (0,0) && p._1 >= 0 && p._2 >= 0 && p._1 < grid.size && p._2 < grid(0).size)
+      }
+#+END_SRC
+*  benchmark running JVM scala on variations of gamelife solution
+  :PROPERTIES:
+  :CREATED:  [2020-05-09 Sat 19:57]
+  :END:
+
+** variation 1
+*** benchmark results
+#+BEGIN_SRC
+/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/bin/java "-javaagent:/Applications/IntelliJ IDEA CE.app/Contents/lib/idea_rt.jar=63616:/Applications/IntelliJ IDEA CE.app/Contents/bin" -Dfile.encoding=UTF-8 -classpath /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/lib/tools.jar:/Users/alex/code/gameoflifetest/target/scala-2.13/classes:/Users/alex/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.2/scala-library-2.13.2.jar gameoflife
+--- loaded @ 2020-05-09T17:04:10.376 UTC ---
+args:
+calculating generation #1 @ 2020-05-09T20:04:10.718
+calculating generation #2 @ 2020-05-09T20:04:13.453
+calculating generation #3 @ 2020-05-09T20:04:15.043
+calculating generation #4 @ 2020-05-09T20:04:16.344
+calculating generation #5 @ 2020-05-09T20:04:17.568
+calculating generation #6 @ 2020-05-09T20:04:18.742
+calculating generation #7 @ 2020-05-09T20:04:19.904
+calculating generation #8 @ 2020-05-09T20:04:20.997
+calculating generation #9 @ 2020-05-09T20:04:22.092
+calculating generation #10 @ 2020-05-09T20:04:23.274
+calculating generation #11 @ 2020-05-09T20:04:24.387
+calculating generation #12 @ 2020-05-09T20:04:25.500
+calculating generation #13 @ 2020-05-09T20:04:26.604
+calculating generation #14 @ 2020-05-09T20:04:27.733
+calculating generation #15 @ 2020-05-09T20:04:28.859
+calculating generation #16 @ 2020-05-09T20:04:29.985
+calculating generation #17 @ 2020-05-09T20:04:31.049
+calculating generation #18 @ 2020-05-09T20:04:32.188
+calculating generation #19 @ 2020-05-09T20:04:33.469
+calculating generation #20 @ 2020-05-09T20:04:34.567
+calculating generation #21 @ 2020-05-09T20:04:35.661
+calculating generation #22 @ 2020-05-09T20:04:36.898
+calculating generation #23 @ 2020-05-09T20:04:38.004
+calculating generation #24 @ 2020-05-09T20:04:39.080
+calculating generation #25 @ 2020-05-09T20:04:40.248
+calculating generation #26 @ 2020-05-09T20:04:41.349
+calculating generation #27 @ 2020-05-09T20:04:42.459
+calculating generation #28 @ 2020-05-09T20:04:43.597
+calculating generation #29 @ 2020-05-09T20:04:45.001
+calculating generation #30 @ 2020-05-09T20:04:46.337
+calculating generation #31 @ 2020-05-09T20:04:47.579
+calculating generation #32 @ 2020-05-09T20:04:48.674
+calculating generation #33 @ 2020-05-09T20:04:49.801
+calculating generation #34 @ 2020-05-09T20:04:50.890
+calculating generation #35 @ 2020-05-09T20:04:51.997
+calculating generation #36 @ 2020-05-09T20:04:53.093
+calculating generation #37 @ 2020-05-09T20:04:54.295
+calculating generation #38 @ 2020-05-09T20:04:55.387
+calculating generation #39 @ 2020-05-09T20:04:56.502
+calculating generation #40 @ 2020-05-09T20:04:57.696
+calculating generation #41 @ 2020-05-09T20:04:58.806
+calculating generation #42 @ 2020-05-09T20:04:59.913
+calculating generation #43 @ 2020-05-09T20:05:01.008
+calculating generation #44 @ 2020-05-09T20:05:02.127
+calculating generation #45 @ 2020-05-09T20:05:03.224
+calculating generation #46 @ 2020-05-09T20:05:04.327
+calculating generation #47 @ 2020-05-09T20:05:05.409
+calculating generation #48 @ 2020-05-09T20:05:06.527
+calculating generation #49 @ 2020-05-09T20:05:07.631
+calculating generation #50 @ 2020-05-09T20:05:08.726
+calculating generation #51 @ 2020-05-09T20:05:09.808
+calculating generation #52 @ 2020-05-09T20:05:10.904
+calculating generation #53 @ 2020-05-09T20:05:12.004
+calculating generation #54 @ 2020-05-09T20:05:13.104
+calculating generation #55 @ 2020-05-09T20:05:14.444
+calculating generation #56 @ 2020-05-09T20:05:15.644
+calculating generation #57 @ 2020-05-09T20:05:16.766
+calculating generation #58 @ 2020-05-09T20:05:17.901
+calculating generation #59 @ 2020-05-09T20:05:19.138
+calculating generation #60 @ 2020-05-09T20:05:20.264
+calculating generation #61 @ 2020-05-09T20:05:21.352
+calculating generation #62 @ 2020-05-09T20:05:22.479
+calculating generation #63 @ 2020-05-09T20:05:23.638
+calculating generation #64 @ 2020-05-09T20:05:24.728
+calculating generation #65 @ 2020-05-09T20:05:25.816
+calculating generation #66 @ 2020-05-09T20:05:26.904
+calculating generation #67 @ 2020-05-09T20:05:27.999
+calculating generation #68 @ 2020-05-09T20:05:29.113
+calculating generation #69 @ 2020-05-09T20:05:30.227
+calculating generation #70 @ 2020-05-09T20:05:31.323
+calculating generation #71 @ 2020-05-09T20:05:32.423
+calculating generation #72 @ 2020-05-09T20:05:33.579
+calculating generation #73 @ 2020-05-09T20:05:34.684
+calculating generation #74 @ 2020-05-09T20:05:35.771
+calculating generation #75 @ 2020-05-09T20:05:36.880
+calculating generation #76 @ 2020-05-09T20:05:37.976
+calculating generation #77 @ 2020-05-09T20:05:39.109
+calculating generation #78 @ 2020-05-09T20:05:40.233
+calculating generation #79 @ 2020-05-09T20:05:41.325
+calculating generation #80 @ 2020-05-09T20:05:43.028
+
+Process finished with exit code 130 (interrupted by signal 2: SIGINT)
+
+#+END_SRC
+*** code
+#+BEGIN_SRC
+import java.time.{LocalDate, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.util.Random
+import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
+
+
+import scala.collection.mutable
+import scala.concurrent.duration.Duration
+
+object gameoflife extends App {
+  def impl_v2(): Unit = {
+    println(s"--- loaded @ ${LocalDateTime.now(ZoneOffset.UTC)} UTC ---")
+    println(s"args: ${args.mkString(",")}")
+
+    def add(x: Int)(v: Int) = x+v
+
+
+    class Grid()
+
+    class GameLoop {
+      var tsLast: Double = 0
+      var fpsCalcLast: Double = 0
+
+      val calcFpsInterval = Duration(100, TimeUnit.MILLISECONDS)
+
+      var frameTimes = mutable.ArrayBuffer.empty[Double]
+      val FpsLimit = 60
+      frameTimes.sizeHint((calcFpsInterval.toSeconds * FpsLimit).toInt)
+
+      var avgFrameTimeToDispaly: Double = 0
+      var fpsToDisplay: Double = 0
+
+
+      val gridUpdateInterval = Duration(1, TimeUnit.SECONDS)
+      var gridLastUpdate: Double = 0
+      var gridGeneration = 0
+
+      val size = 10
+
+      object canvas {
+        val width = 1152
+        val height = 635
+      }
+
+      val rnd = new Random(214310)
+      var grid_sz = Array.ofDim[Boolean](
+        canvas.width / size * size,
+        canvas.height / size * size
+      )
+
+
+      val grid = for {
+        x <- 0 to canvas.width / size * size
+        y <- 0 to canvas.height / size * size
+      } yield (x, y)
+
+      //println("grid size", grid.size, grid(0).size)
+
+      // gen live cells
+//      for (_ <- 0 to 100) {
+//        grid(rnd.nextInt(grid.size))(rnd.nextInt(grid(0).size)) = true
+//      }
+
+      def add(x: Int)(v: Int) = x+v
+
+      def neighbours(pos: (Int, Int)): Seq[(Int, Int)] = {
+        (for {
+          p1 <- Seq(add(1) _, add(0) _, add(-1) _)
+          p2 <- Seq(add(1) _, add(0) _, add(-1) _)
+        } yield (p1, p2))
+          .map { case (f1, f2) => (f1(pos._1), f2(pos._2)) }
+          .filter(p => p != (0, 0) && p._1 >= 0 && p._2 >= 0 && p._1 < grid_sz.size && p._2 < grid_sz(0).size)
+      }
+
+      var alive = (1 to 100).map { _ =>
+        (
+          math.abs((rnd.nextInt() % canvas.width) / size * size),
+          math.abs((rnd.nextInt() % canvas.height) / size * size)
+        )
+      }.distinct
+
+
+      def render(ts: Double): Unit = while (true) {
+        frameTimes.append(ts - tsLast)
+        tsLast = ts
+
+        gridLastUpdate = ts
+        gridGeneration += 1
+
+        println(s"calculating generation #${gridGeneration} @ ${LocalDateTime.now()}")
+
+        alive = alive.map[Option[(Int, Int)]] { pos =>
+          (alive intersect neighbours(pos)).size match {
+            case i if i >= 2 && i <= 3 => Some(pos)
+            case _ => None
+          }
+        }.filter(_.nonEmpty)
+          .map(_.get)
+
+        alive ++= (grid diff alive).map[Option[(Int, Int)]] { pos =>
+          if ((alive intersect neighbours(pos)).size == 3) {
+            Some(pos)
+          } else {
+            None
+          }
+        }.filter(_.nonEmpty)
+          .map(_.get)
+      }
+    }
+
+    (new GameLoop).render(0)
+  }
+
+  impl_v2()
+}
+
+#+END_SRC
+** variation 2
+*** benchmark results
+#+BEGIN_SRC
+0	19:45:27
+1	19:45:27
+2	19:45:27
+3	19:45:28
+4	19:45:28
+5	19:45:29
+6	19:45:29
+7	19:45:29
+8	19:45:30
+9	19:45:30
+10	19:45:30
+11	19:45:30
+12	19:45:30
+13	19:45:31
+14	19:45:31
+15	19:45:31
+16	19:45:31
+17	19:45:31
+18	19:45:32
+19	19:45:32
+20	19:45:32
+21	19:45:32
+22	19:45:32
+23	19:45:33
+24	19:45:33
+25	19:45:33
+26	19:45:33
+27	19:45:33
+28	19:45:34
+29	19:45:34
+30	19:45:34
+31	19:45:34
+32	19:45:34
+33	19:45:35
+34	19:45:35
+35	19:45:35
+36	19:45:35
+37	19:45:35
+38	19:45:36
+39	19:45:36
+40	19:45:36
+41	19:45:36
+42	19:45:36
+43	19:45:37
+44	19:45:37
+45	19:45:37
+46	19:45:37
+47	19:45:37
+48	19:45:38
+49	19:45:38
+50	19:45:38
+51	19:45:38
+52	19:45:38
+53	19:45:39
+54	19:45:39
+55	19:45:39
+56	19:45:39
+57	19:45:39
+58	19:45:40
+59	19:45:40
+60	19:45:40
+61	19:45:40
+62	19:45:40
+63	19:45:41
+64	19:45:41
+65	19:45:41
+66	19:45:41
+67	19:45:41
+68	19:45:42
+69	19:45:42
+70	19:45:42
+71	19:45:42
+72	19:45:42
+73	19:45:43
+74	19:45:43
+75	19:45:43
+76	19:45:43
+77	19:45:43
+78	19:45:44
+79	19:45:44
+80	19:45:44
+81	19:45:44
+82	19:45:45
+83	19:45:45
+84	19:45:45
+85	19:45:45
+86	19:45:45
+87	19:45:46
+88	19:45:46
+89	19:45:46
+90	19:45:46
+91	19:45:46
+92	19:45:47
+93	19:45:47
+94	19:45:47
+95	19:45:47
+96	19:45:47
+97	19:45:48
+98	19:45:48
+99	19:45:48
+100	19:45:48
+101	19:45:48
+102	19:45:49
+103	19:45:49
+104	19:45:49
+105	19:45:49
+106	19:45:50
+107	19:45:50
+108	19:45:50
+109	19:45:50
+110	19:45:50
+111	19:45:51
+112	19:45:51
+113	19:45:51
+114	19:45:51
+115	19:45:51
+116	19:45:52
+117	19:45:52
+118	19:45:52
+119	19:45:52
+120	19:45:52
+121	19:45:53
+122	19:45:53
+123	19:45:53
+124	19:45:53
+125	19:45:54
+126	19:45:54
+127	19:45:54
+128	19:45:54
+129	19:45:55
+130	19:45:55
+131	19:45:55
+132	19:45:55
+133	19:45:55
+134	19:45:56
+135	19:45:56
+136	19:45:56
+137	19:45:56
+138	19:45:57
+139	19:45:57
+140	19:45:57
+141	19:45:57
+142	19:45:57
+143	19:45:58
+144	19:45:58
+145	19:45:58
+146	19:45:58
+147	19:45:58
+148	19:45:59
+149	19:45:59
+150	19:45:59
+151	19:45:59
+152	19:45:59
+153	19:46:00
+154	19:46:00
+155	19:46:00
+156	19:46:00
+157	19:46:00
+158	19:46:01
+159	19:46:01
+160	19:46:01
+161	19:46:01
+162	19:46:01
+163	19:46:02
+164	19:46:02
+165	19:46:02
+166	19:46:02
+167	19:46:02
+168	19:46:03
+169	19:46:03
+170	19:46:03
+171	19:46:03
+172	19:46:03
+173	19:46:04
+174	19:46:04
+175	19:46:04
+176	19:46:04
+177	19:46:04
+178	19:46:05
+179	19:46:05
+180	19:46:05
+181	19:46:05
+182	19:46:06
+183	19:46:06
+184	19:46:06
+185	19:46:06
+186	19:46:07
+187	19:46:07
+188	19:46:07
+189	19:46:07
+190	19:46:08
+191	19:46:08
+192	19:46:08
+193	19:46:08
+194	19:46:09
+195	19:46:09
+196	19:46:09
+197	19:46:09
+198	19:46:10
+199	19:46:10
+200	19:46:10
+201	19:46:11
+202	19:46:11
+203	19:46:11
+204	19:46:12
+205	19:46:12
+206	19:46:12
+207	19:46:12
+208	19:46:13
+209	19:46:13
+210	19:46:13
+211	19:46:13
+212	19:46:14
+213	19:46:15
+214	19:46:15
+215	19:46:16
+216	19:46:16
+217	19:46:16
+218	19:46:17
+219	19:46:17
+220	19:46:18
+221	19:46:18
+222	19:46:18
+223	19:46:19
+224	19:46:19
+225	19:46:20
+226	19:46:20
+227	19:46:21
+228	19:46:21
+229	19:46:22
+230	19:46:22
+231	19:46:23
+232	19:46:23
+233	19:46:25
+234	19:46:26
+235	19:46:27
+#+END_SRC
+
+*** code
+#+BEGIN_SRC scala
+import java.time.{LocalDate, LocalDateTime, ZoneId, ZoneOffset, ZonedDateTime}
+import java.util.Random
+import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
+
+
+import scala.collection.mutable
+import scala.concurrent.duration.Duration
+
+object gameoflife extends App {
+  def impl_v2(): Unit = {
+    println(s"--- loaded @ ${LocalDateTime.now(ZoneOffset.UTC)} UTC ---")
+    println(s"args: ${args.mkString(",")}")
+
+    class Grid()
+
+    class GameLoop {
+      var tsLast: Double = 0
+      var fpsCalcLast: Double = 0
+
+      val calcFpsInterval = Duration(100, TimeUnit.MILLISECONDS)
+
+      var frameTimes = mutable.ArrayBuffer.empty[Double]
+      val FpsLimit = 60
+      frameTimes.sizeHint((calcFpsInterval.toSeconds * FpsLimit).toInt)
+
+      var avgFrameTimeToDispaly: Double = 0
+      var fpsToDisplay: Double = 0
+
+
+      val gridUpdateInterval = Duration(1, TimeUnit.SECONDS)
+      var gridLastUpdate: Double = 0
+      var gridGeneration = 0
+
+      val size = 10
+
+      object canvas {
+        val width = 1152
+        val height = 635
+      }
+
+      val rnd = new Random(214310)
+      var grid = Array.ofDim[Boolean](
+        canvas.width / size * size,
+        canvas.height / size * size
+      )
+
+      println("grid size", grid.size, grid(0).size)
+
+      // gen live cells
+      for (_ <- 0 to 100) {
+        grid(rnd.nextInt(grid.size))(rnd.nextInt(grid(0).size)) = true
+      }
+
+      def add(x: Int)(v: Int) = x+v
+
+      def neighbours(pos: (Int, Int)) = Seq(
+        (pos._1 + 1, pos._2 + 1),
+        (pos._1 + 1, pos._2 + 0),
+        (pos._1 + 1, pos._2 - 1),
+        (pos._1 + 0, pos._2 + 1),
+        (pos._1 + 0, pos._2 - 1),
+        (pos._1 - 1, pos._2 + 1),
+        (pos._1 - 1, pos._2 + 0),
+        (pos._1 - 1, pos._2 - 1),
+      ).filter(p => p != (0, 0) && p._1 >= 0 && p._2 >= 0 && p._1 < grid.size && p._2 < grid(0).size)
+
+      def render(ts: Double): Unit = while (true) {
+        frameTimes.append(ts - tsLast)
+        tsLast = ts
+
+        gridLastUpdate = ts
+        gridGeneration += 1
+
+        println(s"calculating generation #${gridGeneration} @ ${LocalDateTime.now()}")
+
+        val gridplusone = grid.map(_.clone)
+        for {
+          i <- 0 until grid.size
+          j <- 0 until grid(0).size
+        } {
+
+
+          //println(s"proc cell $i $j")
+          val aliveNeighbours = neighbours(i, j)
+            .map { case (ni, nj) => if (grid(ni)(nj)) 1 else 0 }
+            .sum
+
+          // cell is alive, check if it continue to live on
+          if (grid(i)(j)) {
+            gridplusone(i)(j) = aliveNeighbours >= 2 && aliveNeighbours <= 3
+          } else {
+            gridplusone(i)(j) = aliveNeighbours == 3
+          }
+        }
+
+        grid = gridplusone
+
+
+        //println(s"done calculating generation #${gridGeneration}")
+      }
+    }
+
+    (new GameLoop).render(0)
+  }
+
+  impl_v2()
+}
+
+#+END_SRC
+*  eliminating all allocations from game loop makes generation calculation fast enough to sustain ~2000x1000 @ 60fps
+  :PROPERTIES:
+  :CREATED:  [2020-05-17 Sun 12:41]
+  :END:
+
+even using ~neighbours~ that looks like this:
+
+#+BEGIN_SRC scala
+      def neighbours(pos: (Int, Int)) = Seq(
+        (pos._1 + 1, pos._2 + 1),
+        (pos._1 + 1, pos._2 + 0),
+        (pos._1 + 1, pos._2 - 1),
+        (pos._1 + 0, pos._2 + 1),
+        (pos._1 + 0, pos._2 - 1),
+        (pos._1 - 1, pos._2 + 1),
+        (pos._1 - 1, pos._2 + 0),
+        (pos._1 - 1, pos._2 - 1),
+      ).filter( p => p != pos && p._1 >= 0 && p._2 >= 0 && p._1 < grid.size && p._2 < grid(0).size)
+#+END_SRC
+
+makes the fps drop.

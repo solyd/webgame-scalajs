@@ -8,6 +8,11 @@ enablePlugins(ScalaJSPlugin)
 
 // This is an application with a main method
 scalaJSUseMainModuleInitializer := true
+//mainClass in Compile := Some("gameoflife")
+//mainClass in (Compile, run) := Some("gameoflife")
+//mainClass in (Compile, packageBin) := Some("gameoflife")
+//mainClass in packageBin := Some("gameoflife")
+//mainClass in run := Some("gameoflife")
 
 libraryDependencies ++= Seq(
   "org.scala-js" %%% "scalajs-dom" % "1.0.0",
