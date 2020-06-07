@@ -11,8 +11,8 @@ import scala.concurrent.duration.Duration
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-object gameoflife {
-  def main(args: Array[String]): Unit = {
+object gameoflifebasic {
+  def main99(args: Array[String]): Unit = {
     println(s"--- loaded @ ${LocalDateTime.now(ZoneOffset.UTC)} UTC ---")
     println(s"args: ${args.mkString(",")}")
 

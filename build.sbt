@@ -17,7 +17,20 @@ scalaJSUseMainModuleInitializer := true
 libraryDependencies ++= Seq(
   "org.scala-js" %%% "scalajs-dom" % "1.0.0",
   "io.github.cquiroz" %%% "scala-java-time" % "2.0.0",
-  "com.lihaoyi" %%% "utest" % "0.7.4" % "test"
+
+  // akka
+  "org.akka-js" %%% "akkajsactor" % "2.2.6.5",
+  "org.akka-js" %%% "akkajsactorstream" % "2.2.6.5",
+
+  // typed akka ( + test deps )
+  "org.akka-js" %%% "akkajsactortyped" % "2.2.6.5",
+  "org.akka-js" %%% "akkajsactorstreamtyped" % "2.2.6.5",
+  "org.akka-js" %%% "akkajstypedtestkit" % "2.2.6.5" % "test",
+
+  // test
+  "com.lihaoyi" %%% "utest" % "0.7.4" % "test",
+  "org.akka-js" %%% "akkajstestkit" % "2.2.6.5" % "test",
+  "org.akka-js" %%% "akkajsstreamtestkit" % "2.2.6.5" % "test",
 )
 
 jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
